@@ -122,12 +122,8 @@ fn run() -> Result<String, Error> {
             }
         }
     };
-    let result = Tera::one_off(&template_input, &context, true).map_err(|err| {
-        Error::new(
-            ErrorType::RenderError,
-            format!("failed to render '{}': {}", args.template, err),
-        )
-    })?;
+    // (TEMPFIX) TODO: Add proper error messages
+    let result = Tera::one_off(&template_input, &context, false).unwrap();
     Ok(result)
 }
  

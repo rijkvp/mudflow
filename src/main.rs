@@ -70,12 +70,6 @@ enum Error {
     Template(String),
 }
 
-impl std::convert::From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::IO(err.to_string())
-    }
-}
-
 impl std::convert::From<tera::Error> for Error {
     fn from(err: tera::Error) -> Self {
         if let Some(source) = err.source() {
@@ -89,11 +83,11 @@ impl std::convert::From<tera::Error> for Error {
 fn run(args: Args) -> Result<(), Error> {
     let input = {
         if let Some(input_source) = args.input_source {
-            std::fs::read_to_string(&input_source)?
+            std::fs::read_to_string(&input_source).map_err(|e| Error::IO(format!("Failed to read input source '{}': {}", input_source.display(), e)))?
         } else {
             let mut stdin = io::stdin();
             let mut input_buf = String::new();
-            stdin.read_to_string(&mut input_buf)?;
+            stdin.read_to_string(&mut input_buf).map_err(|e| Error::IO(format!("Failed to read stdin: {}", e)))?;
             input_buf
         }
     };
@@ -102,18 +96,18 @@ fn run(args: Args) -> Result<(), Error> {
     if let Some(out_dir) = args.output_dir {
         let mut tera = Tera::new(&args.templates)?;
         tera.autoescape_on(vec![]);
-        std::fs::create_dir_all(&out_dir)?;
+        std::fs::create_dir_all(&out_dir).map_err(|e| Error::IO(format!("Failed to create directories '{}': {}", out_dir.display(), e)))?;
         for template in tera.get_template_names() {
             let path = out_dir.join(template);
             if let Some(parent) = path.parent() {
-                std::fs::create_dir_all(parent)?;
+                std::fs::create_dir_all(&parent).map_err(|e| Error::IO(format!("Failed to create directories '{}': {}", parent.display(), e)))?;
             }
-            let mut file = File::create(&path)?;
+            let mut file = File::create(&path).map_err(|e| Error::IO(format!("Failed to create file '{}': {}", path.display(), e)))?;
             tera.render_to(template, &context, &mut file)?;
-            println!("{} {:<30} {:^7} {:>30}", "Rendered".green().bold(), template.dimmed(), "->".white().bold(), path.display().dimmed());
+            println!("{} {:<30}  {}  {:<30}", "Rendered".green().bold(), template.dimmed(), "->".white().bold(), path.display().dimmed());
         }
     } else {
-        let template_input = std::fs::read_to_string(&args.templates)?;
+        let template_input = std::fs::read_to_string(&args.templates).map_err(|e| Error::IO(format!("Failed to read file '{}': {}", args.templates, e)))?;
         let mut tera = Tera::default();
         tera.autoescape_on(vec![]);
         tera.add_raw_template(&args.templates, &template_input)?;

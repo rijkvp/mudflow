@@ -1,11 +1,11 @@
 [package]
 name = "teraformer"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
-tera = "1.16"
-clap = { version = "3.2", features = ["derive"] }
+tera = "1.17"
+clap = { version = "4.0", features = ["derive"] }
 owo-colors = "3"
 serde = "1.0"
 thiserror = "1.0"
@@ -18,4 +18,3 @@ opt-level = 3
 lto = true
 strip = true
 codegen-units = 1
-panic = 'abort'

@@ -1,0 +1,51 @@
+name: Development Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  dev_build:
+    name: "Development build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          target: x86_64-unknown-linux-gnu
+          toolchain: stable
+          profile: minimal
+          
+      - name: Cache 
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./target
+            ~/.cargo                        
+          key: rust-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            debug-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+            debug-${{ runner.os }}-
+
+      - name: Run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose
+
+      - name: Release mode build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target x86_64-unknown-linux-gnu --release --verbose
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: mudflow
+          path: target/x86_64-unknown-linux-gnu/release/mudflow   
+

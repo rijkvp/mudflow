@@ -1,4 +1,4 @@
-name: Development Build
+name: Development build
 
 on:
   push:
@@ -31,12 +31,6 @@ jobs:
             debug-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
             debug-${{ runner.os }}-
 
-      - name: Run tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --verbose
-
       - name: Release mode build
         uses: actions-rs/cargo@v1
         with:
@@ -48,4 +42,18 @@ jobs:
         with:
           name: mudflow
           path: target/x86_64-unknown-linux-gnu/release/mudflow   
+  dev_build_release:
+    name: Release dev build
+    needs: dev_build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+      - name: Create release for dev build
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "dev"
+          prerelease: true
+          title: "Development build"
+          files: "./**/*"
 

@@ -3,5 +3,5 @@
 CLI for Tera to render templates from JSON, YAML &amp; TOML
 
 ```sh
- wget -q https://github.com/rijkvp/mudflow/releases/download/dev && chmod +x ~/.local/bin/mudflow
+wget https://github.com/rijkvp/mudflow/releases/download/dev/mudflow -O ~/.local/bin/mudflow && chmod +x ~/.local/bin/mudflow
 ```

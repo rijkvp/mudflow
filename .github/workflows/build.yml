@@ -26,10 +26,10 @@ jobs:
           path: |
             ./target
             ~/.cargo                        
-          key: rust-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('Cargo.lock') }}
+          key: release-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
-            debug-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
-            debug-${{ runner.os }}-
+            release-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+            release-${{ runner.os }}-
 
       - name: Release mode build
         uses: actions-rs/cargo@v1

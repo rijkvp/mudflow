@@ -1,13 +1,13 @@
 use clap::{Parser, ValueEnum};
-use owo_colors::OwoColorize;
 use std::{
     error::Error as StdError,
     fmt::Debug,
     fs::File,
-    io::{self, Read},
+    io::{self, Read, Write},
     path::PathBuf,
 };
 use tera::{Context, Tera};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use thiserror::Error;
 
 #[derive(Parser, Debug)]
@@ -28,8 +28,14 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    if let Err(e) = run(args) {
-        eprintln!("{} {}", "error:".red().bold(), e.white());
+    let mut stderr = StandardStream::stderr(ColorChoice::Auto);
+    if let Err(e) = run(args, &mut stderr) {
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true))
+            .unwrap();
+        write!(&mut stderr, "error:").unwrap();
+        stderr.reset().unwrap();
+        writeln!(&mut stderr, " {e}").unwrap();
     }
 }
 
@@ -39,7 +45,7 @@ enum Error {
     IO(String),
     #[error("{0}")]
     Deserialization(String),
-    #[error("Template render: {0}")]
+    #[error("Failed to render template: {0}")]
     Template(String),
     #[error("Unsupported file extension: {0}")]
     UnsupportedExt(String),
@@ -57,7 +63,7 @@ impl std::convert::From<tera::Error> for Error {
     }
 }
 
-fn run(args: Args) -> Result<(), Error> {
+fn run(args: Args, stderr: &mut StandardStream) -> Result<(), Error> {
     let sources: Vec<(FileFormat, String)> = {
         if let Some(sources) = args.sources {
             let mut inputs = Vec::new();
@@ -65,11 +71,14 @@ fn run(args: Args) -> Result<(), Error> {
                 let format = if let Some(f) = args.format {
                     f
                 } else {
-                    // TODO: Handle errors
-                    let ext = source_path.extension().unwrap();
-                    FileFormat::from_ext(ext.to_str().unwrap())?
+                    FileFormat::from_ext(
+                        &source_path
+                            .extension()
+                            .unwrap_or_default()
+                            .to_string_lossy(),
+                    )?
                 };
-                let source_str = std::fs::read_to_string(&source_path).map_err(|e| {
+                let source_str = std::fs::read_to_string(source_path).map_err(|e| {
                     Error::IO(format!(
                         "Failed to read source file '{}': {}",
                         source_path.display(),
@@ -82,7 +91,7 @@ fn run(args: Args) -> Result<(), Error> {
         } else {
             let format = args
                 .format
-                .ok_or(Error::Msg("Format required when using stdin!".to_string()))?;
+                .ok_or_else(|| Error::Msg("Format required when using stdin!".to_string()))?;
             let mut stdin = io::stdin();
             let mut input_str = String::new();
             stdin
@@ -106,7 +115,7 @@ fn run(args: Args) -> Result<(), Error> {
         for template in tera.get_template_names() {
             let path = out_dir.join(template);
             if let Some(parent) = path.parent() {
-                std::fs::create_dir_all(&parent).map_err(|e| {
+                std::fs::create_dir_all(parent).map_err(|e| {
                     Error::IO(format!(
                         "Failed to create directories '{}': {}",
                         parent.display(),
@@ -118,13 +127,12 @@ fn run(args: Args) -> Result<(), Error> {
                 Error::IO(format!("Failed to create file '{}': {}", path.display(), e))
             })?;
             tera.render_to(template, &context, &mut file)?;
-            eprintln!(
-                "{} {:<30}  {}  {:<30}",
-                "Rendered".green().bold(),
-                template.dimmed(),
-                "->".white().bold(),
-                path.display().dimmed()
-            );
+            stderr
+                .set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))
+                .unwrap();
+            write!(stderr, "rendered:").unwrap();
+            stderr.reset().unwrap();
+            writeln!(stderr, " {}", path.display()).unwrap();
         }
     } else {
         let template_input = std::fs::read_to_string(&args.templates).map_err(|e| {

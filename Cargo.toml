@@ -1,6 +1,6 @@
 [package]
 name = "mudflow"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 authors = ["Rijk van Putten <rijk@rijkvp.nl>"]
 description = "CLI for Tera to render templates from JSON, YAML & TOML"
@@ -8,15 +8,16 @@ description = "CLI for Tera to render templates from JSON, YAML & TOML"
 [dependencies]
 tera = "1.17"
 clap = { version = "4.0", features = ["derive"] }
-owo-colors = "3"
 thiserror = "1.0"
 serde = "1.0"
 serde_json = "1.0"
 serde_yaml = "0.9"
 toml = "0.5"
+termcolor = "1.1"
 
 [profile.release]
 opt-level = 3
 lto = true
 strip = true
 codegen-units = 1
+panic = 'abort'
